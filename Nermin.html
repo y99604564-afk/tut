@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Management System</title>
+<style>
+  :root {
+    --bg: #f4f1fb; --card: #ffffff; --ink: #2a2140; --muted: #6b6485;
+    --brand: #6d3fd1; --brand2: #3b82f6; --ok: #15803d; --warn: #c2410c; --line: #e3dcf3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #15112a; --card: #201a3b; --ink: #f0ebff; --muted: #b3a9d6;
+            --brand: #9b79f0; --brand2: #60a5fa; --ok: #5fd08a; --warn: #ffb073; --line: #352c5c; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, "Segoe UI", Tahoma, sans-serif;
+         background: var(--bg); color: var(--ink); line-height: 1.7; }
+
+  header { background: linear-gradient(135deg, #6d3fd1, #3b82f6); color: #fff;
+           text-align: center; padding: 56px 16px 64px; }
+  header h1 { margin: 0 0 8px; font-size: 2.2rem; }
+  header p { margin: 0; opacity: .92; }
+
+  main { max-width: 880px; margin: -32px auto 0; padding: 0 16px 48px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+          padding: 24px; margin-bottom: 20px; }
+  .card h2 { margin-top: 0; }
+  .welcome { text-align: center; }
+
+  button { background: linear-gradient(135deg, var(--brand), var(--brand2)); color: #fff;
+           border: 0; border-radius: 999px; padding: 13px 30px; font-size: 1rem; cursor: pointer; }
+  button:hover { filter: brightness(1.1); }
+  button:focus-visible { outline: 3px solid var(--warn); outline-offset: 3px; }
+
+  ul.features { list-style: none; padding: 0; margin: 0; display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+  ul.features li { background: var(--bg); border-radius: 10px; padding: 12px 14px; }
+  ul.features li::before { content: "✔ "; color: var(--ok); }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 10px; border-bottom: 1px solid var(--line); text-align: center; white-space: nowrap; }
+  th { background: var(--bg); }
+  .pass { color: var(--ok); font-weight: bold; }
+  .review { color: var(--warn); font-weight: bold; }
+  #output { display: none; }
+  footer { text-align: center; color: var(--muted); padding: 16px 16px 32px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Student Management System</h1>
+  <p>Academic Results Analysis &amp; Mercy Committee</p>
+</header>
+
+<main>
+  <section class="card welcome">
+    <h2>Welcome to the University System</h2>
+    <p>This system analyzes student grades, calculates averages, and identifies students who need academic support.</p>
+    <button id="runBtn">Run Student Analysis</button>
+  </section>
+
+  <section class="card">
+    <h2>System Features</h2>
+    <ul class="features">
+      <li>Student Management</li>
+      <li>Grades Analysis</li>
+      <li>Academic Evaluation</li>
+      <li>Mercy Committee</li>
+    </ul>
+  </section>
+
+  <div id="output">
+    <section class="card">
+      <h2>Students Report</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Name</th><th>Average</th><th>Grade</th><th>Result</th></tr>
+          </thead>
+          <tbody id="reportBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Struggling Students After Mercy</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Name</th><th>Old Average</th><th>New Average</th></tr>
+          </thead>
+          <tbody id="mercyBody"></tbody>
+        </table>
+      </div>
+      <p>Average after adjustment: <strong id="mercyAvg">0.00</strong></p>
+    </section>
+  </div>
+</main>
+
+<footer>Student Management System | 2026</footer>
+
+<script>
+// Student class
+class Student {
+  constructor(id, name, grades, attendance) {
+    this.id = id;                 // seat number
+    this.name = name;             // student name
+    this.grades = grades;         // subject grades
+    this.attendance = attendance; // attendance percentage
+  }
+
+  // Calculate the average
+  getAverage() {
+    let total = this.grades.reduce((sum, g) => sum + g, 0);
+    return total / this.grades.length;
+  }
+
+  // Return the letter grade
+  getGrade(avg) {
+    if (avg >= 90) return "A";
+    else if (avg >= 80) return "B";
+    else if (avg >= 70) return "C";
+    else if (avg >= 60) return "D";
+    else if (avg >= 50) return "E";
+    else return "F";
+  }
+
+  // Result: average >= 50 AND attendance >= 75
+  getResult(avg) {
+    if (avg >= 50 && this.attendance >= 75) return "Pass";
+    else return "Needs Review";
+  }
+}
+
+// Main array with 4 students
+const studentsList = [
+  new Student(101, "Ahmed Ali", [90, 85, 95], 92),
+  new Student(102, "Sara Mohamed", [48, 45, 50], 80),
+  new Student(103, "Mahmoud Hassan", [40, 46, 43], 70),
+  new Student(104, "Mona Khaled", [65, 70, 60], 60),
+];
+
+// Mercy Committee
+// 1) Extract: students with average from 40 to 49
+const weakStudents = studentsList.filter((s) => {
+  let avg = s.getAverage();
+  return avg >= 40 && avg <= 49;
+});
+
+// 2) Process: add 5 points to each average
+const afterMercy = weakStudents.map((s) => ({
+  id: s.id,
+  name: s.name,
+  oldAverage: s.getAverage(),
+  newAverage: s.getAverage() + 5,
+}));
+
+// 3) Analyze: sum of the new averages
+const sumNewAverages = afterMercy.reduce((sum, s) => sum + s.newAverage, 0);
+
+// 4) Mercy average (guard against division by zero)
+let mercyAverage = 0;
+if (afterMercy.length > 0) {
+  mercyAverage = sumNewAverages / afterMercy.length;
+}
+
+// Print the report in the console (Inspect > Console)
+function printConsoleReport() {
+  console.log("----- Students Report -----");
+  studentsList.forEach((s) => {
+    let avg = s.getAverage();
+    console.log(
+      "Name: " + s.name +
+      " | Average: " + avg.toFixed(2) +
+      " | Grade: " + s.getGrade(avg) +
+      " | Result: " + s.getResult(avg)
+    );
+  });
+
+  console.log("----- Struggling Students After Mercy -----");
+  console.log(afterMercy);
+
+  console.log("----- Average After Adjustment -----");
+  console.log(mercyAverage.toFixed(2));
+}
+
+// Print once when the page loads
+printConsoleReport();
+
+// Show results on the page when the button is clicked
+document.getElementById("runBtn").addEventListener("click", () => {
+  printConsoleReport();
+  let rows = "";
+  studentsList.forEach((s) => {
+    const avg = s.getAverage();
+    const result = s.getResult(avg);
+    const cls = result === "Pass" ? "pass" : "review";
+    rows += `<tr>
+      <td>${s.name}</td>
+      <td>${avg.toFixed(2)}</td>
+      <td>${s.getGrade(avg)}</td>
+      <td class="${cls}">${result}</td>
+    </tr>`;
+  });
+  document.getElementById("reportBody").innerHTML = rows;
+
+  let mercyRows = "";
+  if (afterMercy.length === 0) {
+    mercyRows = `<tr><td colspan="3">No struggling students</td></tr>`;
+  } else {
+    afterMercy.forEach((s) => {
+      mercyRows += `<tr>
+        <td>${s.name}</td>
+        <td>${s.oldAverage.toFixed(2)}</td>
+        <td>${s.newAverage.toFixed(2)}</td>
+      </tr>`;
+    });
+  }
+  document.getElementById("mercyBody").innerHTML = mercyRows;
+  document.getElementById("mercyAvg").textContent = mercyAverage.toFixed(2);
+
+  const out = document.getElementById("output");
+  out.style.display = "block";
+  out.scrollIntoView({ behavior: "smooth" });
+});
+</script>
+
+</body>
+</html>
